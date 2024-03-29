@@ -13,9 +13,14 @@ interface BoardStore {
   x: number
   y: number
   bombs: number
+  bombsRemaning: number
+  piecesRemaning: number
   resetBoard: (x: number, y: number, bombs: number) => void
   clickPiece: (index: number) => void
+  clickPieceClicked: (index: number) => void
   toggleFlagged: (index: number) => void
+  addBombRemaning: () => void
+  subtractBombRemaning: () => void
 }
 
 export const useBoardStore = create<BoardStore>()((set, get) => ({
@@ -23,11 +28,24 @@ export const useBoardStore = create<BoardStore>()((set, get) => ({
   x: 0,
   y: 0,
   bombs: 0,
+  bombsRemaning: 0,
+  piecesRemaning: 0,
   resetBoard: (x, y, bombs) =>
-    set({ board: createBoard(x, y, bombs), x, y, bombs }),
+    set({
+      board: createBoard(x, y, bombs),
+      x,
+      y,
+      bombs,
+      bombsRemaning: bombs,
+      piecesRemaning: x * y,
+    }),
   clickPiece: (index) => set({ board: recursiveClickPiece(get(), index) }),
+  clickPieceClicked: (index) =>
+    set({ board: recursiveClickPiece(get(), index) }),
   toggleFlagged: (index) =>
     set({ board: toggleFlaggedAtIndex(get().board, index) }),
+  addBombRemaning: () => set({ bombsRemaning: get().bombsRemaning + 1 }),
+  subtractBombRemaning: () => set({ bombsRemaning: get().bombsRemaning - 1 }),
 }))
 
 function createBoard(x: number, y: number, bombs: number): Board {
@@ -81,6 +99,9 @@ function recursiveClickPiece(store: BoardStore, index: number): Board {
   const { board, x, y } = store
 
   board[index].isClicked = true
+  useBoardStore.setState({
+    piecesRemaning: useBoardStore.getState().piecesRemaning - 1,
+  })
 
   const recall = (index: number) => {
     if (board[index].isClicked === false && board[index].isFlagged === false) {
@@ -105,6 +126,12 @@ function recursiveClickPiece(store: BoardStore, index: number): Board {
 
 function toggleFlaggedAtIndex(board: Board, index: number): Board {
   board[index].isFlagged = !board[index].isFlagged
+
+  if (board[index].isFlagged) {
+    useBoardStore.getState().subtractBombRemaning()
+  } else {
+    useBoardStore.getState().addBombRemaning()
+  }
 
   return board
 }

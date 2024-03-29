@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button"
 import { Board } from "@/components/Board"
 
 function App() {
-  const { resetBoard } = useBoardStore()
+  const { resetBoard, bombsRemaning, piecesRemaning, x, y, bombs } =
+    useBoardStore()
 
   useEffect(() => {
     resetBoard(12, 12, 10)
@@ -12,11 +13,18 @@ function App() {
   }, [])
 
   return (
-    <div className="flex gap-4 justify-center w-1/2 mx-auto mt-4">
-      <Board />
+    <>
+      <div className="flex flex-col gap-4 w-1/2 mx-auto">
+        <Board />
 
-      <Button onClick={() => resetBoard(10, 10, 20)}>Restart</Button>
-    </div>
+        <Button onClick={() => resetBoard(x, y, bombs)}>Restart</Button>
+
+        <div>
+          <p>Bombs remaning: {bombsRemaning}</p>
+          <p>Pieces remaning: {piecesRemaning}</p>
+        </div>
+      </div>
+    </>
   )
 }
 
