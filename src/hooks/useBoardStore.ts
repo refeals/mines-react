@@ -4,7 +4,8 @@ type Board = Piece[]
 
 type Piece = {
   value: number
-  clicked: boolean
+  isClicked: boolean
+  isFlagged: boolean
 }
 
 interface BoardStore {
@@ -14,6 +15,7 @@ interface BoardStore {
   bombs: number
   resetBoard: (x: number, y: number, bombs: number) => void
   clickPiece: (index: number) => void
+  toggleFlagged: (index: number) => void
 }
 
 export const useBoardStore = create<BoardStore>()((set, get) => ({
@@ -24,6 +26,8 @@ export const useBoardStore = create<BoardStore>()((set, get) => ({
   resetBoard: (x, y, bombs) =>
     set({ board: createBoard(x, y, bombs), x, y, bombs }),
   clickPiece: (index) => set({ board: recursiveClickPiece(get(), index) }),
+  toggleFlagged: (index) =>
+    set({ board: toggleFlaggedAtIndex(get().board, index) }),
 }))
 
 function createBoard(x: number, y: number, bombs: number): Board {
@@ -36,36 +40,11 @@ function createBoard(x: number, y: number, bombs: number): Board {
 
   const boardWithBombs: Board = boardStr.split("").map((value) => ({
     value: value === "b" ? -1 : Number(value),
-    clicked: false,
+    isClicked: false,
+    isFlagged: false,
   }))
 
   const board = setNeighborsValue(boardWithBombs, bombsPositions, x, y)
-
-  return board
-}
-
-function recursiveClickPiece(data: BoardStore, index: number): Piece[] {
-  const { board, x, y } = data
-
-  board[index].clicked = true
-
-  const recall = (index: number) => {
-    if (board[index].clicked === false) {
-      recursiveClickPiece(data, index)
-    }
-  }
-
-  if (board[index].value === 0) {
-    if (index - x - 1 >= 0 && index % x > 0) recall(index - x - 1) // top left
-    if (index - x >= 0) recall(index - x) // top
-    if (index - x + 1 > 0 && index % x < x - 1) recall(index - x + 1) // top right
-    if ((index - 1) % x >= 0 && index % x !== 0) recall(index - 1) // left
-    if ((index + 1) % x >= 0 && index % x !== x - 1) recall(index + 1) // right
-    if (Math.floor(index / x) < y - 1 && index % x > 0) recall(index + x - 1) // bottom left
-    if (Math.floor(index / x) < y - 1) recall(index + x) // bottom
-    if (Math.floor(index / x) < y - 1 && index % x < x - 1)
-      recall(index + x + 1) // bottom right
-  }
 
   return board
 }
@@ -94,6 +73,38 @@ function setNeighborsValue(
     if (Math.floor(index / x) < y - 1) add(index + x) // bottom
     if (Math.floor(index / x) < y - 1 && index % x < x - 1) add(index + x + 1) // bottom right
   })
+
+  return board
+}
+
+function recursiveClickPiece(store: BoardStore, index: number): Board {
+  const { board, x, y } = store
+
+  board[index].isClicked = true
+
+  const recall = (index: number) => {
+    if (board[index].isClicked === false && board[index].isFlagged === false) {
+      recursiveClickPiece(store, index)
+    }
+  }
+
+  if (board[index].value === 0) {
+    if (index - x - 1 >= 0 && index % x > 0) recall(index - x - 1) // top left
+    if (index - x >= 0) recall(index - x) // top
+    if (index - x + 1 > 0 && index % x < x - 1) recall(index - x + 1) // top right
+    if ((index - 1) % x >= 0 && index % x !== 0) recall(index - 1) // left
+    if ((index + 1) % x >= 0 && index % x !== x - 1) recall(index + 1) // right
+    if (Math.floor(index / x) < y - 1 && index % x > 0) recall(index + x - 1) // bottom left
+    if (Math.floor(index / x) < y - 1) recall(index + x) // bottom
+    if (Math.floor(index / x) < y - 1 && index % x < x - 1)
+      recall(index + x + 1) // bottom right
+  }
+
+  return board
+}
+
+function toggleFlaggedAtIndex(board: Board, index: number): Board {
+  board[index].isFlagged = !board[index].isFlagged
 
   return board
 }
